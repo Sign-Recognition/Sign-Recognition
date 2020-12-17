@@ -120,10 +120,10 @@ class SpeechRecognition():
             print("Say something.")
             with m as source: audio = r.listen(source)
             label_text = self.label.text()
-            self.label.setText(label_text + "구어: ...\n")
             if not self.running:
                 print("sorry, speech recognition service is closed")
                 break
+            self.label.setText(label_text + "구어: ...\n")
             print("Got it, Recognizing it...")
             # 구글 웹 음성 API로 인식하기 (하루에 제한 50회)
             try:
@@ -132,8 +132,10 @@ class SpeechRecognition():
                 self.label.setText(label_text + "구어: " + recog_result  + "\n")
             except sr.UnknownValueError:
                 print("Google Speech Recognition could not understand audio")
+                self.label.setText(label_text)
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
+                self.label.setText(label_text)
         print("Thread end.")
 
     def isRunning(self):
@@ -191,23 +193,13 @@ class WindowClass(QMainWindow, form_class) :
             self.btn_2.setText("마이크 시작")
 
     def button3Function(self):
-        fileDailog = QFileDialog(self)
-        fileDailog.setFileMode(QFileDialog.Directory)
-        file_path = fileDailog.getOpenFileName()[0]
-        if file_path == "": return
-        print(file_path)
-        with open(file_path + "/" + "회의록.txt") as fp:
+        fname = QFileDialog.getExistingDirectory(self, 'Find Folder')
+        if fname == "": return
+        with open(fname + "/" + "회의록.txt", "wt") as fp:
             fp.write(self.label_2.text())
 
 if __name__ == "__main__" :
-    #QApplication : 프로그램을 실행시켜주는 클래스
     app = QApplication(sys.argv) 
-
-    #WindowClass의 인스턴스 생성
     myWindow = WindowClass() 
-
-    #프로그램 화면을 보여주는 코드
     myWindow.show()
-
-    #프로그램을 이벤트루프로 진입시키는(프로그램을 작동시키는) 코드
     app.exec_()
