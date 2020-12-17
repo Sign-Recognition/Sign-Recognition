@@ -11,6 +11,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as pp
 import requests
+from gtts import gTTS
+from playsound import playsound
 
 ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
 # model = tf.keras.models.load_model('model_31.h5',custom_objects={'KerasLayer':hub.KerasLayer})
@@ -24,6 +26,11 @@ class SignRecognition:
         self.label2 = label2 
         self.label3 = label3
         self.running = False
+
+    def tts(self, str): # str에 적힌 내용을 tts로 읽어주는 함수
+        tts = gTTS(text=str, lang='ko')
+        tts.save("temp.mp3")
+        playsound("temp.mp3")
 
     def crop_center_square(self, frame):
          y, x = frame.shape[0:2]
