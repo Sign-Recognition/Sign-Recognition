@@ -9,19 +9,14 @@ from PyQt5 import QtGui
 from PyQt5 import QtCore
 import time
 import numpy as np
-
-import tensorflow as tf
-import tensorflow_hub as hub
-from tensorflow.keras import layers
-from tensorflow import keras
-import pandas as pd
-
 import matplotlib.pyplot as pp
+import requests
 
-model = tf.keras.models.load_model('model_31.h5',custom_objects={'KerasLayer':hub.KerasLayer})
+ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
+# model = tf.keras.models.load_model('model_31.h5',custom_objects={'KerasLayer':hub.KerasLayer})
 # model.summary()
 # model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy']), compile=False
-category_list=pd.Series(pd.read_csv('category_list_31.txt')['0'])
+# category_list=pd.Series(pd.read_csv('category_list_31.txt')['0'])
 
 class SignRecognition:
     def __init__(self, label, label2, label3):
@@ -29,13 +24,6 @@ class SignRecognition:
         self.label2 = label2 
         self.label3 = label3
         self.running = False
-        
-        
-  #          buf = np.empty((1080, 720, 3), dtype=np.uint8)
- 
-  # buf1=crop_center_square(buf)  
-  #       frame = cv2.resize(buf1, (224,224))
-
 
     def crop_center_square(self, frame):
          y, x = frame.shape[0:2]
@@ -48,18 +36,15 @@ class SignRecognition:
          return frame
 
     def predict(self,data):
-        global category_list
-        data=data.reshape(-1,60,224,224,3)
-        pred=model(data)
-        pred=category_list[np.argmax(np.array(pred))]
-        return pred
+        # print(data)
+        upload= {'file':data}
+        res = requests.post(ip_address + "/video", files=upload)
+        return res.json()
     
     def run(self):
         cap = cv2.VideoCapture(0)
         width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        #세로 224, 가로 비율 맞춰서
-        #print(width, height)
         self.label.resize(141, 141)
         frames=[]
         cnt = 0
