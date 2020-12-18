@@ -6,7 +6,7 @@ import speech_recognition as sr
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5 import QtGui
-from PyQt5 import QtCore
+from PyQt5.QtCore import *
 import time
 import numpy as np
 import matplotlib.pyplot as pp
@@ -20,11 +20,14 @@ ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트�
 # model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy']), compile=False
 # category_list=pd.Series(pd.read_csv('category_list_31.txt')['0'])
 
-class SignRecognition:
-    def __init__(self, label, label2, label3):
+class SignRecognition(QObject):
+    signal1 = pyqtSignal(int)
+    def __init__(self, label, label2, label3, probar):
+        QObject.__init__(self)
         self.label = label
         self.label2 = label2 
         self.label3 = label3
+        self.probar = probar
         self.running = False
 
     def tts(self, str): # str에 적힌 내용을 tts로 읽어주는 함수
@@ -40,6 +43,7 @@ class SignRecognition:
          frame= frame[start_y:start_y+min_dim,start_x:start_x+min_dim]
 
          # frame = frame[ :, [2, 1, 0]]
+         
          return frame
 
     def predict(self,data):
@@ -55,6 +59,7 @@ class SignRecognition:
         self.label.resize(141, 141)
         frames=[]
         cnt = 0
+        self.signal1.emit(cnt)
         while self.running:
             ret, img = cap.read()
             if ret:
@@ -69,10 +74,10 @@ class SignRecognition:
                 self.label.setPixmap(pixmap)
                 time.sleep(1/30)
 
-                self.label2.setText(str(2 - cnt/30)[:3])
                 img= cv2.resize(img, (224, 224))
                 frames.append(img)
                 cnt+=1
+                self.signal1.emit(cnt)
                 #print(cnt)
                 if cnt == 60:
                     cnt = 0
@@ -81,6 +86,7 @@ class SignRecognition:
                     self.label3.setText(label_text + "수어: ...\n")
                     pred=self.predict(frames)
                     self.label3.setText(label_text+ "수어:"+ pred  + "\n")
+                    self.label2.setText(pred)
                     frames=[]
             else:
                 print("cannot read frame.")
@@ -88,6 +94,7 @@ class SignRecognition:
         cap.release()
         self.label.clear()
         self.label2.clear()
+        self.probar.hide()
         print("Thread end.")
 
     def isRunning(self):
@@ -169,18 +176,25 @@ class WindowClass(QMainWindow, form_class) :
     def __init__(self) :
         super().__init__()
         self.setupUi(self)
-        self.sign_recog = SignRecognition(self.label,self.label_3, self.label_2)
+        self.sign_recog = SignRecognition(self.label,self.label_3, self.label_2, self.probar)
         self.speech_recog = SpeechRecognition(self.label_2)
         self.scrollArea.setWidget(self.label_2)
+        self.probar.hide()
         #버튼에 기능을 연결하는 코드
         self.btn_1.clicked.connect(self.button1Function)
         self.btn_2.clicked.connect(self.button2Function)
         self.btn_3.clicked.connect(self.button3Function)
 
-    #btn_1이 눌리면 작동할 함수
+        self.sign_recog.signal1.connect(self.signal1_emitted)
+
+    @pyqtSlot(int)
+    def signal1_emitted(self, value):
+        self.probar.setValue(value)
+
     def button1Function(self) :
         if not self.sign_recog.isRunning():
             self.sign_recog.start()
+            self.probar.show()
             self.btn_1.setStyleSheet('color: red')
             self.btn_1.setText("수어 영상 중단")
         else:
@@ -188,7 +202,6 @@ class WindowClass(QMainWindow, form_class) :
             self.btn_1.setStyleSheet('color: black;')
             self.btn_1.setText("수어 영상 시작")
 
-    #btn_2가 눌리면 작동할 함수
     def button2Function(self) :
         if not self.speech_recog.isRunning():
             self.speech_recog.start()
