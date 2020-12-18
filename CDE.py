@@ -13,12 +13,87 @@ import matplotlib.pyplot as pp
 import requests
 from gtts import gTTS
 from playsound import playsound
+import pandas as pd
 
 ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
 # model = tf.keras.models.load_model('model_31.h5',custom_objects={'KerasLayer':hub.KerasLayer})
 # model.summary()
 # model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy']), compile=False
 # category_list=pd.Series(pd.read_csv('category_list_31.txt')['0'])
+
+word_dict=pd.read_csv('단어감지.csv',encoding='euc-kr',index_col='기본')
+compound_list=pd.DataFrame(index=['두어요'],columns=['앞단어','합성어'])
+compound_list.loc['두어요']=['살펴요','보관해요']
+
+word_list=[]
+n= 0
+def end():
+    global n
+    global word_list
+    global word_dict
+    
+    if word_dict['과거'][word_list[n-2]]!='0':
+        word_list[n-2]=word_dict['과거'][word_list[n-2]]
+        del word_list[n-1]
+        n=n-1
+    
+    st=''    
+    for i in word_list:
+            st=st+ i+' '   
+    return st
+        
+def ing():
+    global n
+    global word_list
+    global word_dict
+    if word_dict['하는'][word_list[n-2]]!='0':
+        word_list[n-2]=word_dict['하는'][word_list[n-2]]
+        word_list[n-1]='중이에요'
+        n=n-1
+    
+    st=''    
+    for i in word_list:
+            st=st+ i+' '   
+    return st
+
+def none():
+    global word_list
+    word_list=[]
+
+def compound():
+    global n
+    global word_list
+    global compound_list
+    
+    if word_list[n-1] in compound_list.index:
+        word_list[n-2]=compound_list['합성어'][word_list[n-1]]
+        del word_list[n-1]
+        n=n-1
+        
+    st=''    
+    for i in word_list:
+            st=st+ i+' '   
+    return st    
+func_dict={
+        '도중이에요' : ing,
+        '끝나요' : end,
+        '없음' : none
+        }
+def make_sentence(word):
+    global n
+    word_list.append(word)
+    n=len(word_list)
+    
+    if len(word_list)==1:
+        return word
+    else: 
+        x=word_list[n-1]
+        if x in func_dict:
+            result=func_dict[x]()
+        else: 
+            result=compound()
+        
+        return result
 
 class SignRecognition(QObject):
     signal1 = pyqtSignal(int)
@@ -53,6 +128,7 @@ class SignRecognition(QObject):
         return res.json()
     
     def run(self):
+        label_text = self.label3.text()
         cap = cv2.VideoCapture(0)
         width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -82,16 +158,18 @@ class SignRecognition(QObject):
                 if cnt == 60:
                     cnt = 0
                     frames=(np.array(frames)).reshape(-1,60,224,224,3) /255.0
-                    label_text = self.label3.text()
-                    self.label3.setText(label_text + "수어: ...\n")
                     pred=self.predict(frames)
-                    self.label3.setText(label_text+ "수어:"+ pred  + "\n")
+                    if pred == "없음":
+                        self.label3.setText(label_text + "\n")
+                        label_text = self.label3.text()
+                    self.label3.setText(label_text+ "수어: "+ make_sentence(pred))
                     self.label2.setText(pred)
                     frames=[]
             else:
                 print("cannot read frame.")
                 break
         cap.release()
+        self.label3.setText(label_text + "\n")
         self.label.clear()
         self.label2.clear()
         self.probar.hide()
@@ -184,7 +262,9 @@ class WindowClass(QMainWindow, form_class) :
         self.btn_1.clicked.connect(self.button1Function)
         self.btn_2.clicked.connect(self.button2Function)
         self.btn_3.clicked.connect(self.button3Function)
-
+        #self.label_2.setText("a\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\n")
+        print(self.scrollArea.verticalScrollBar().maximum())
+        self.scrollArea.verticalScrollBar().setValue(2)
         self.sign_recog.signal1.connect(self.signal1_emitted)
 
     @pyqtSlot(int)
