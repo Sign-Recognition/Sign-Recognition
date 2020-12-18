@@ -262,6 +262,7 @@ class WindowClass(QMainWindow, form_class) :
         self.btn_1.clicked.connect(self.button1Function)
         self.btn_2.clicked.connect(self.button2Function)
         self.btn_3.clicked.connect(self.button3Function)
+        self.eraseButton.clicked.connect(self.eraseButtonFunction)
         #self.label_2.setText("a\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\n")
         print(self.scrollArea.verticalScrollBar().maximum())
         self.scrollArea.verticalScrollBar().setValue(2)
@@ -297,7 +298,8 @@ class WindowClass(QMainWindow, form_class) :
         if fname == "": return
         with open(fname + "/" + "회의록.txt", "wt") as fp:
             fp.write(self.label_2.text())
-
+    def eraseButtonFunction(self):
+        self.label_2.clear()
 if __name__ == "__main__" :
     app = QApplication(sys.argv) 
     myWindow = WindowClass() 

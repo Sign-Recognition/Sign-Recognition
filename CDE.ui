@@ -84,9 +84,9 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>10</y>
+     <y>50</y>
      <width>621</width>
-     <height>421</height>
+     <height>381</height>
     </rect>
    </property>
    <property name="widgetResizable">
@@ -101,7 +101,7 @@
       <x>0</x>
       <y>0</y>
       <width>619</width>
-      <height>419</height>
+      <height>379</height>
      </rect>
     </property>
    </widget>
@@ -172,6 +172,24 @@
     <string>%p%</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="eraseButton">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>10</y>
+     <width>81</width>
+     <height>34</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>a옛날사진관4</family>
+    </font>
+   </property>
+   <property name="text">
+    <string>지우기</string>
+   </property>
+  </widget>
   <zorder>btn_1</zorder>
   <zorder>btn_2</zorder>
   <zorder>btn_3</zorder>
@@ -180,6 +198,7 @@
   <zorder>label_3</zorder>
   <zorder>label_2</zorder>
   <zorder>probar</zorder>
+  <zorder>eraseButton</zorder>
  </widget>
  <resources/>
  <connections/>
