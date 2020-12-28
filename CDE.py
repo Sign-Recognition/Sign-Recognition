@@ -162,6 +162,7 @@ class SignRecognition(QObject):
                     if pred == "없음":
                         make_sentence(pred)
                         label_text = self.label3.text()
+                        tts(label_text.split("\n")[-1])
                         self.label3.setText(label_text + "\n")
                         label_text = self.label3.text()
 
