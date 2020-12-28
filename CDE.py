@@ -160,8 +160,11 @@ class SignRecognition(QObject):
                     frames=(np.array(frames)).reshape(-1,60,224,224,3) /255.0
                     pred=self.predict(frames)
                     if pred == "없음":
+                        make_sentence(pred)
+                        label_text = self.label3.text()
                         self.label3.setText(label_text + "\n")
                         label_text = self.label3.text()
+
                     self.label3.setText(label_text+ "수어: "+ make_sentence(pred))
                     self.label2.setText(pred)
                     frames=[]
@@ -302,6 +305,7 @@ class WindowClass(QMainWindow, form_class) :
         self.label_2.clear()
 if __name__ == "__main__" :
     app = QApplication(sys.argv) 
+    #app.setStyle('Fusion')
     myWindow = WindowClass() 
     myWindow.show()
     app.exec_()
