@@ -49,7 +49,7 @@ def ing():
     if word_dict['하는'][word_list[n-2]]!='0':
         word_list[n-2]=word_dict['하는'][word_list[n-2]]
         word_list[n-1]='중이에요'
-        n=n-1
+        n=n-1 # 왜?
     
     st=''    
     for i in word_list:
@@ -66,6 +66,7 @@ def compound():
     global compound_list
     
     if word_list[n-1] in compound_list.index:
+        # 앞단어 확인 과정은?
         word_list[n-2]=compound_list['합성어'][word_list[n-1]]
         del word_list[n-1]
         n=n-1
