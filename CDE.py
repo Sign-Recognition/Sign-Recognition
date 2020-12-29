@@ -22,7 +22,6 @@ ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트�
 # model.summary()
 # model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy']), compile=False
 # category_list=pd.Series(pd.read_csv('category_list_31.txt')['0'])
-
 word_dict=pd.read_csv('단어감지.csv',encoding='euc-kr',index_col='기본')
 compound_list=pd.DataFrame(index=['두어요'],columns=['앞단어','합성어'])
 compound_list.loc['두어요']=['살펴요','보관해요']
@@ -100,12 +99,14 @@ def make_sentence(word):
 
 class SignRecognition(QObject):
     signal1 = pyqtSignal(int)
-    def __init__(self, label, label2, label3, probar):
+    def __init__(self, label, label2, label3, probar, scroll):
         QObject.__init__(self)
         self.label = label
         self.label2 = label2 
         self.label3 = label3
         self.probar = probar
+        self.scroll = scroll
+        self.label_text = ""
         self.running = False
 
     def tts(self, str): # str에 적힌 내용을 tts로 읽어주는 함수
@@ -124,19 +125,40 @@ class SignRecognition(QObject):
          
          return frame
 
-    def predict(self,data):
-        #print(data)
-        data = data.astype(np.float16)
-        data2 = zlib.compress(data)
-        data2 = base64.b64encode(data2)
-        #print(sys.getsizeof(data))
-        #print(sys.getsizeof(data2))
-        upload= {'file':data2}
-        res = requests.post(ip_address + "/video", data=upload)
+    def predict(self):
+        upload= {'file':open('temp.avi', "rb")}
+        res = requests.post(ip_address + "/video", files=upload)
         return res.json()
-    
+
+    def save_video(self, data):
+        fps = 30
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        # fourcc 값 받아오기, *는 문자를 풀어쓰는 방식, *'DIVX' == 'D', 'I', 'V', 'X'
+        out = cv2.VideoWriter("temp.avi", fourcc, fps, (224, 224))
+        for i in range(len(data)):
+            #print(out.isOpened())
+            #cv2.imshow("fjke",data[i])
+            #cv2.waitKey()
+            out.write(data[i])
+        out.release()
+
+
+    def my_thread(self,frames):
+        self.save_video(frames)
+        pred=self.predict()
+        if pred == "없음":
+            make_sentence(pred)
+            self.label_text = self.label3.text()
+            self.tts(self.label_text.split("\n")[-1])
+            self.label3.setText(self.label_text + "\n")
+            self.label_text = self.label3.text()
+        else:
+            self.label3.setText(self.label_text+ "수어: "+ make_sentence(pred))
+            self.label2.setText(pred)
+        self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
+
     def run(self):
-        label_text = self.label3.text()
+        self.label_text = self.label3.text()
         cap = cv2.VideoCapture(0)
         width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -165,23 +187,16 @@ class SignRecognition(QObject):
                 #print(cnt)
                 if cnt == 60:
                     cnt = 0
-                    frames=(np.array(frames)).reshape(-1,60,224,224,3) /255.0
-                    pred=self.predict(frames)
-                    if pred == "없음":
-                        make_sentence(pred)
-                        label_text = self.label3.text()
-                        tts(label_text.split("\n")[-1])
-                        self.label3.setText(label_text + "\n")
-                        label_text = self.label3.text()
-
-                    self.label3.setText(label_text+ "수어: "+ make_sentence(pred))
-                    self.label2.setText(pred)
+                    #frames=(np.array(frames)).reshape(-1,60,224,224,3) /255.0
+                    frames = np.array(frames).reshape(60,224,224,3)
+                    #threading.Thread(target = self.my_thread, args=(frames,))
+                    self.my_thread(frames)
                     frames=[]
             else:
                 print("cannot read frame.")
                 break
         cap.release()
-        self.label3.setText(label_text + "\n")
+        self.label3.setText(self.label_text + "\n")
         self.label.clear()
         self.label2.clear()
         self.probar.hide()
@@ -205,9 +220,10 @@ class SignRecognition(QObject):
         stop()
     
 class SpeechRecognition():
-    def __init__(self, label):
+    def __init__(self, label, scroll):
         self.label = label
         self.running = False
+        self.scroll = scroll
 
     def run(self):
         AUDIO_FILE = "hello.wav"
@@ -228,12 +244,14 @@ class SpeechRecognition():
                 print("sorry, speech recognition service is closed")
                 break
             self.label.setText(label_text + "구어: ...\n")
+            self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
             print("Got it, Recognizing it...")
             # 구글 웹 음성 API로 인식하기 (하루에 제한 50회)
             try:
                 recog_result = r.recognize_google(audio, language='ko')
                 print("Google Speech Recognition thinks you said : " + recog_result)
                 self.label.setText(label_text + "구어: " + recog_result  + "\n")
+                self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
             except sr.UnknownValueError:
                 print("Google Speech Recognition could not understand audio")
                 self.label.setText(label_text)
@@ -266,8 +284,8 @@ class WindowClass(QMainWindow, form_class) :
     def __init__(self) :
         super().__init__()
         self.setupUi(self)
-        self.sign_recog = SignRecognition(self.label,self.label_3, self.label_2, self.probar)
-        self.speech_recog = SpeechRecognition(self.label_2)
+        self.sign_recog = SignRecognition(self.label,self.label_3, self.label_2, self.probar, self.scrollArea)
+        self.speech_recog = SpeechRecognition(self.label_2, self.scrollArea)
         self.scrollArea.setWidget(self.label_2)
         self.probar.hide()
         #버튼에 기능을 연결하는 코드
@@ -275,9 +293,7 @@ class WindowClass(QMainWindow, form_class) :
         self.btn_2.clicked.connect(self.button2Function)
         self.btn_3.clicked.connect(self.button3Function)
         self.eraseButton.clicked.connect(self.eraseButtonFunction)
-        #self.label_2.setText("a\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\n")
-        print(self.scrollArea.verticalScrollBar().maximum())
-        self.scrollArea.verticalScrollBar().setValue(2)
+        self.label_2.setText("a\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\n")
         self.sign_recog.signal1.connect(self.signal1_emitted)
 
     @pyqtSlot(int)
