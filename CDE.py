@@ -152,6 +152,7 @@ class SignRecognition(QObject):
     def my_thread(self,frames):
         self.save_video(frames)
         pred=self.predict()
+        self.label2.setText(pred)
         if pred == "없음":
             make_sentence(pred)
             self.label_text = self.label3.text()
@@ -163,7 +164,6 @@ class SignRecognition(QObject):
             self.label_text = self.label3.text()
         else:
             self.label3.setText(self.label_text+ "수어: "+ make_sentence(pred))
-            self.label2.setText(pred)
         self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
 
     def run(self):
