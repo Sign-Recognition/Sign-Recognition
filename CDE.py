@@ -16,6 +16,7 @@ from playsound import playsound
 import pandas as pd
 import zlib
 import base64
+import pygame
 ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
 #ip_address = "http://192.168.43.141:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
 # model = tf.keras.models.load_model('model_31.h5',custom_objects={'KerasLayer':hub.KerasLayer})
@@ -106,13 +107,18 @@ class SignRecognition(QObject):
         self.label3 = label3
         self.probar = probar
         self.scroll = scroll
+        self.cnt = 0
         self.label_text = ""
         self.running = False
 
-    def tts(self, str): # str에 적힌 내용을 tts로 읽어주는 함수
-        tts = gTTS(text=str, lang='ko')
-        tts.save("temp.mp3")
-        playsound("temp.mp3")
+    def tts(self, text): # str에 적힌 내용을 tts로 읽어주는 함수
+        tts = gTTS(text=text, lang='ko')
+        tts.save("temp" + str(self.cnt) +".mp3")
+        pygame.mixer.init()
+        pygame.mixer.music.load("temp" + str(self.cnt) +".mp3")
+        pygame.mixer.music.play()
+        self.cnt += 1
+        self.cnt %= 2
 
     def crop_center_square(self, frame):
          y, x = frame.shape[0:2]
@@ -149,7 +155,10 @@ class SignRecognition(QObject):
         if pred == "없음":
             make_sentence(pred)
             self.label_text = self.label3.text()
-            self.tts(self.label_text.split("\n")[-1])
+            text = self.label_text.split("\n")[-1]
+            if text == "":
+                return
+            self.tts(text)
             self.label3.setText(self.label_text + "\n")
             self.label_text = self.label3.text()
         else:
