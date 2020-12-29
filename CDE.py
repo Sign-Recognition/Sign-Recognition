@@ -302,7 +302,7 @@ class WindowClass(QMainWindow, form_class) :
         self.btn_2.clicked.connect(self.button2Function)
         self.btn_3.clicked.connect(self.button3Function)
         self.eraseButton.clicked.connect(self.eraseButtonFunction)
-        self.label_2.setText("a\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\n")
+        #self.label_2.setText("a\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\na\n")
         self.sign_recog.signal1.connect(self.signal1_emitted)
 
     @pyqtSlot(int)
