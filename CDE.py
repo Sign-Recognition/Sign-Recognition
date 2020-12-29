@@ -14,8 +14,10 @@ import requests
 from gtts import gTTS
 from playsound import playsound
 import pandas as pd
-
+import zlib
+import base64
 ip_address = "http://127.0.0.1:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
+#ip_address = "http://192.168.43.141:5000" # 라지베리파이에 넣을 때 노트북 IP로 바꿔야 함.
 # model = tf.keras.models.load_model('model_31.h5',custom_objects={'KerasLayer':hub.KerasLayer})
 # model.summary()
 # model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy']), compile=False
@@ -123,9 +125,14 @@ class SignRecognition(QObject):
          return frame
 
     def predict(self,data):
-        # print(data)
-        upload= {'file':data}
-        res = requests.post(ip_address + "/video", files=upload)
+        #print(data)
+        data = data.astype(np.float16)
+        data2 = zlib.compress(data)
+        data2 = base64.b64encode(data2)
+        #print(sys.getsizeof(data))
+        #print(sys.getsizeof(data2))
+        upload= {'file':data2}
+        res = requests.post(ip_address + "/video", data=upload)
         return res.json()
     
     def run(self):
